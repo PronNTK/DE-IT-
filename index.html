@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gara Ảo Localhost - Demo Quản Lý Gara Ô Tô (9 Bước Chuẩn QA)</title>
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --card: #ffffff;
+      --primary: #1d4ed8;
+      --primary-hover: #1e40af;
+      --success: #15803d;
+      --danger: #b91c1c;
+      --warning: #b45309;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #cbd5e1;
+    }
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--text); padding-bottom: 40px; }
+    header {
+      background: #0f172a; color: #fff; padding: 16px 24px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+    }
+    header h1 { margin: 0; font-size: 1.25rem; }
+    .badge-env {
+      background: #334155; color: #38bdf8; padding: 4px 10px;
+      border-radius: 6px; font-size: 0.8rem; font-weight: 600;
+    }
+    .container { max-width: 1280px; margin: 20px auto; padding: 0 16px; }
+    .kpi-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px; margin-bottom: 20px;
+    }
+    .kpi-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .kpi-title { font-size: 0.85rem; color: var(--muted); margin-bottom: 6px; }
+    .kpi-value { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+    .main-grid {
+      display: grid; grid-template-columns: 1.35fr 1fr; gap: 20px;
+    }
+    @media (max-width: 960px) { .main-grid { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 20px; margin-bottom: 20px;
+    }
+    .card h2 { margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+    .step-list { list-style: none; padding: 0; margin: 0 0 16px 0; display: grid; gap: 8px; }
+    .step-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border);
+      background: #f8fafc; font-size: 0.9rem;
+    }
+    .step-item.active { border-color: var(--primary); background: #eff6ff; font-weight: 600; }
+    .step-item.done { border-color: #86efac; background: #f0fdf4; color: var(--success); }
+    .gate-box {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
+      margin: 12px 0; padding: 12px; background: #f8fafc; border-radius: 6px; border: 1px dashed var(--border);
+    }
+    .gate-pill { font-size: 0.85rem; padding: 6px 10px; border-radius: 4px; font-weight: 600; }
+    .gate-ok { background: #dcfce7; color: var(--success); }
+    .gate-no { background: #fee2e2; color: var(--danger); }
+    .btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    button {
+      cursor: pointer; border: none; border-radius: 6px; padding: 9px 14px;
+      font-size: 0.88rem; font-weight: 600; transition: opacity 0.15s;
+    }
+    button:hover { opacity: 0.92; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-warning { background: var(--warning); color: #fff; }
+    .btn-outline { background: #e2e8f0; color: var(--text); }
+    .alert {
+      padding: 12px 14px; border-radius: 6px; margin-top: 12px; font-size: 0.9rem; line-height: 1.4;
+    }
+    .alert-error { background: #fef2f2; border: 1px solid #fecaca; color: var(--danger); }
+    .alert-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: var(--success); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-top: 8px; }
+    th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+    th { background: #f1f5f9; }
+    .log-box {
+      max-height: 220px; overflow-y: auto; background: #0f172a; color: #e2e8f0;
+      padding: 12px; border-radius: 6px; font-family: monospace; font-size: 0.82rem;
+    }
+    .log-entry { margin-bottom: 6px; border-bottom: 1px solid #1e293b; padding-bottom: 4px; }
+    .form-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+    input, select {
+      padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.88rem; flex: 1;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>GARA ẢO LOCALHOST — HỆ THỐNG QUẢN LÝ SỬA CHỮA & MUA BÁN Ô TÔ</h1>
+    <small style="color:#94a3b8;">Chế độ An toàn: Dữ liệu Giả lập [MOCK] | Chặn Bàn giao Xe Tự động (QA Gatekeeper)</small>
+  </div>
+  <div style="display:flex; gap:8px; align-items:center;">
+    <span class="badge-env">LOCALHOST ONLY (OFFLINE SAFE)</span>
+    <button class="btn-outline" onclick="exportBackup()">Sao lưu JSON (Backup)</button>
+    <button class="btn-outline" onclick="resetMockData()">Khôi phục Dữ liệu Mẫu</button>
+  </div>
+</header>
+
+<div class="container">
+  <!-- KPI Báo cáo Kinh doanh -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-title">Lệnh sửa chữa (RO) đang xử lý</div>
+      <div class="kpi-value" id="kpi-active-ro">0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Xe đã bàn giao hoàn tất (Bước 9)</div>
+      <div class="kpi-value" id="kpi-done-ro">0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Doanh thu sửa chữa đã thu [MOCK]</div>
+      <div class="kpi-value" id="kpi-revenue">0 đ</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Tổng tồn kho phụ tùng</div>
+      <div class="kpi-value" id="kpi-stock">0 món</div>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    <!-- Cột trái: Điều khiển Luồng 9 Bước -->
+    <div>
+      <div class="card">
+        <h2>1. Điều khiển Lệnh Sửa Chữa (9 Bước Chuẩn Nghiệp Vụ)</h2>
+        <div class="form-row">
+          <select id="ro-select" onchange="selectRO(this.value)"></select>
+          <button class="btn-primary" onclick="createNewRO()">+ Tiếp nhận Xe Mới [MOCK]</button>
+        </div>
+
+        <div id="ro-summary" style="font-size:0.9rem; margin-bottom:12px; color:var(--muted);"></div>
+
+        <!-- 4 Cờ Kiểm Soát Bắt Buộc (Gatekeeper Flags) -->
+        <div class="gate-box" id="gate-flags"></div>
+
+        <!-- Danh sách 9 bước -->
+        <ul class="step-list" id="step-list"></ul>
+
+        <!-- Thanh công cụ thao tác từng bước -->
+        <div class="btn-group">
+          <button class="btn-primary" onclick="advanceNextStep()">Thực hiện Bước Tiếp Theo</button>
+          <button class="btn-danger" onclick="attemptHandoverNow()">Thử Bàn Giao Xe Ngay (Test Gatekeeper)</button>
+        </div>
+
+        <div id="alert-box"></div>
+      </div>
+
+      <!-- Lịch sử Xe & Nhật ký Kiểm thử -->
+      <div class="card">
+        <h2>2. Lịch sử Phương tiện & Nhật ký Kiểm soát (Audit & QA Logs)</h2>
+        <div class="log-box" id="audit-logs"></div>
+      </div>
+    </div>
+
+    <!-- Cột phải: Kho phụ tùng & Mua bán xe -->
+    <div>
+      <div class="card">
+        <h2>3. Kho Phụ Tùng (Kiểm soát Xuất kho Bước 6)</h2>
+        <p style="font-size:0.84rem; color:var(--muted); margin-top:0;">
+          Hệ thống chỉ cho phép xác nhận Bước 6 (Xuất phụ tùng) khi số lượng tồn kho đủ đáp ứng định mức của Lệnh sửa chữa.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Mã PT</th>
+              <th>Tên Phụ tùng [MOCK]</th>
+              <th>Tồn kho</th>
+              <th>Đơn giá</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="inventory-table"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>4. Phân hệ Mua Bán Xe Ô Tô Trưng Bày [MOCK]</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Mã VIN</th>
+              <th>Dòng xe [MOCK]</th>
+              <th>Giá niêm yết</th>
+              <th>Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody id="sales-table"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const STEP_NAMES = [
+    "1. Tiếp nhận xe (Ghi nhận ODO & triệu chứng)",
+    "2. Kiểm tra kỹ thuật & Chẩn đoán lỗi",
+    "3. Lập Báo giá chi tiết (Phụ tùng + Công thợ)",
+    "4. Phê duyệt Báo giá (BẮT BUỘC KHÁCH DUYỆT)",
+    "5. Tiến hành Sửa chữa tại khoang dịch vụ",
+    "6. Xuất phụ tùng từ kho (BẮT BUỘC ĐỦ TỒN KHO)",
+    "7. Kiểm tra chất lượng - KCS (BẮT BUỘC ĐẠT CHUẨN)",
+    "8. Thanh toán & Xuất hóa đơn (BẮT BUỘC THU ĐỦ)",
+    "9. Bàn giao xe cho khách hàng & Đóng hồ sơ"
+  ];
+
+  const INITIAL_STATE = {
+    selectedRoId: "RO-2026-001",
+    inventory: [
+      { code: "PT-LOCDAU-01", name: "[MOCK] Lọc dầu động cơ Toyota", stock: 5, price: 250000 },
+      { code: "PT-MAPHANH-02", name: "[MOCK] Má phanh trước Ceramic", stock: 2, price: 1200000 }
+    ],
+    carSales: [
+      { vin: "VIN-MOCK-8801", model: "[MOCK] Mazda CX-5 2.0 Premium (2024)", price: 790000000, status: "Đang trưng bày" },
+      { vin: "VIN-MOCK-8802", model: "[MOCK] Hyundai Accent 1.5 AT (2023)", price: 465000000, status: "Đã đặt cọc" }
+    ],
+    repairOrders: [
+      {
+        id: "RO-2026-001",
+        customer: "[MOCK] Trần Văn An (0901.000.111)",
+        plate: "43A-999.99",
+        carModel: "Toyota Vios G",
+        odo: 45000,
+        symptom: "Bảo dưỡng 45.000km, thay lọc dầu và má phanh",
+        currentStep: 1,
+        requiredPartCode: "PT-LOCDAU-01",
+        requiredPartQty: 1,
+        laborFee: 350000,
+        quoteTotal: 600000,
+        quoteApproved: false,
+        partsIssued: false,
+        kcsPassed: false,
+        paymentCompleted: false,
+        handoverCompleted: false
+      }
+    ],
+    logs: [
+      "[KHỞI TẠO] Hệ thống Gara Ảo Localhost đã nạp dữ liệu giả lập [MOCK] an toàn."
+    ]
+  };
+
+  let state = loadState();
+
+  function loadState() {
+    const saved = localStorage.getItem("GARA_AO_STATE_V1");
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    return JSON.parse(JSON.stringify(INITIAL_STATE));
+  }
+
+  function saveState() {
+    localStorage.setItem("GARA_AO_STATE_V1", JSON.stringify(state));
+    renderAll();
+  }
+
+  function addLog(msg) {
+    const now = new Date().toLocaleTimeString("vi-VN");
+    state.logs.unshift(`[${now}] ${msg}`);
+  }
+
+  function getActiveRO() {
+    return state.repairOrders.find(r => r.id === state.selectedRoId) || state.repairOrders[0];
+  }
+
+  // Hàm kiểm tra điều kiện tiên quyết trước khi bàn giao xe (Bước 9)
+  function validateHandoverGatekeeper(ro) {
+    const missing = [];
+    if (!ro.quoteApproved) missing.push("Chưa phê duyệt báo giá (Bước 4)");
+    if (!ro.partsIssued) missing.push("Chưa xuất đủ phụ tùng (Bước 6)");
+    if (!ro.kcsPassed) missing.push("Chưa đạt kiểm tra chất lượng KCS (Bước 7)");
+    if (!ro.paymentCompleted) missing.push("Chưa hoàn tất thanh toán (Bước 8)");
+    if (ro.currentStep < 8) missing.push(`Đang ở Bước ${ro.currentStep}/9 (Cần hoàn tất tuần tự đến Bước 8)`);
+    return {
+      allowed: missing.length === 0,
+      reasons: missing
+    };
+  }
+
+  function showAlert(type, htmlContent) {
+    const box = document.getElementById("alert-box");
+    box.innerHTML = `<div class="alert ${type === 'error' ? 'alert-error' : 'alert-success'}">${htmlContent}</div>`;
+  }
+
+  function advanceNextStep() {
+    const ro = getActiveRO();
+    if (!ro) return;
+
+    if (ro.handoverCompleted || ro.currentStep === 9) {
+      showAlert("success", `Lệnh <b>${ro.id}</b> đã hoàn tất bàn giao xe ở Bước 9.`);
+      return;
+    }
+
+    const nextStep = ro.currentStep + 1;
+
+    // Xử lý logic nghiệp vụ chặt chẽ tại từng bước chuyển giao
+    if (nextStep === 4) {
+      ro.quoteApproved = true;
+      addLog(`[${ro.id}] Khách hàng đã PHÊ DUYỆT BÁO GIÁ (${ro.quoteTotal.toLocaleString('vi-VN')} đ).`);
+    } else if (nextStep === 6) {
+      // Kiểm tra tồn kho trước khi cho phép sang Bước 6 (Xuất phụ tùng)
+      const part = state.inventory.find(p => p.code === ro.requiredPartCode);
+      if (!part || part.stock < ro.requiredPartQty) {
+        const msg = `CHẶN XUẤT KHO (Bước 6): Phụ tùng ${ro.requiredPartCode} chỉ còn tồn ${part ? part.stock : 0}, cần ${ro.requiredPartQty}. Vui lòng nhập thêm kho trước!`;
+        addLog(`[LỖI NGHIỆP VỤ] ${msg}`);
+        showAlert("error", `<b>${msg}</b>`);
+        saveState();
+        return;
+      }
+      part.stock -= ro.requiredPartQty;
+      ro.partsIssued = true;
+      addLog(`[${ro.id}] Đã XUẤT PHỤ TÙNG (${part.code} x${ro.requiredPartQty}). Tồn kho còn: ${part.stock}.`);
+    } else if (nextStep === 7) {
+      ro.kcsPassed = true;
+      addLog(`[${ro.id}] Tổ trưởng kỹ thuật xác nhận ĐẠT KCS (Kiểm tra chất lượng).`);
+    } else if (nextStep === 8) {
+      ro.paymentCompleted = true;
+      addLog(`[${ro.id}] Thu ngân xác nhận ĐÃ THANH TOÁN ĐỦ ${ro.quoteTotal.toLocaleString('vi-VN')} đ.`);
+    } else if (nextStep === 9) {
+      const check = validateHandoverGatekeeper(ro);
+      if (!check.allowed) {
+        showAlert("error", `<b>CHẶN BÀN GIAO XE:</b> ${check.reasons.join("; ")}`);
+        return;
+      }
+      ro.handoverCompleted = true;
+      addLog(`[${ro.id}] HOÀN TẤT BÀN GIAO XE (Bước 9) cho khách hàng ${ro.customer}.`);
+    } else {
+      addLog(`[${ro.id}] Chuyển sang ${STEP_NAMES[nextStep - 1]}.`);
+    }
+
+    ro.currentStep = nextStep;
+    showAlert("success", `Đã chuyển lệnh <b>${ro.id}</b> sang: <b>${STEP_NAMES[ro.currentStep - 1]}</b>`);
+    saveState();
+  }
+
+  function attemptHandoverNow() {
+    const ro = getActiveRO();
+    if (!ro) return;
+    const check = validateHandoverGatekeeper(ro);
+    if (!check.allowed) {
+      const errText = `CHẶN BÀN GIAO XE (${ro.id} - Biển số ${ro.plate}): Vi phạm điều kiện nghiệm thu! Các mục chưa hoàn thành: ${check.reasons.join(" | ")}`;
+      addLog(`[QA GATEKEEPER BLOCKED] ${errText}`);
+      showAlert("error", `<b>HỆ THỐNG CHẶN BÀN GIAO XE!</b><br/>Lý do: ${check.reasons.join("<br/>- ")}`);
+      saveState();
+    } else {
+      ro.currentStep = 9;
+      ro.handoverCompleted = true;
+      addLog(`[QA GATEKEEPER PASS] Lệnh ${ro.id} đủ 4 điều kiện bắt buộc. Đã bàn giao xe thành công!`);
+      showAlert("success", `<b>NGHIỆM THU THÀNH CÔNG:</b> Xe ${ro.plate} đã đủ 4 điều kiện và hoàn tất Bàn giao xe (Bước 9)!`);
+      saveState();
+    }
+  }
+
+  function restockPart(code, delta) {
+    const part = state.inventory.find(p => p.code === code);
+    if (!part) return;
+    if (part.stock + delta < 0) {
+      showAlert("error", "Không thể giảm tồn kho xuống số âm!");
+      return;
+    }
+    part.stock += delta;
+    addLog(`[KHO PHỤ TÙNG] Điều chỉnh tồn kho mã ${code}: ${delta > 0 ? '+' + delta : delta} (Tồn mới: ${part.stock}).`);
+    saveState();
+  }
+
+  function createNewRO() {
+    const idx = state.repairOrders.length + 1;
+    const newId = `RO-2026-00${idx}`;
+    const newRo = {
+      id: newId,
+      customer: `[MOCK] Khách hàng Thử nghiệm #${idx}`,
+      plate: `43A-10${idx}.88`,
+      carModel: "Honda City RS [MOCK]",
+      odo: 20000 + idx * 1500,
+      symptom: "Kiểm tra hệ thống phanh & thay má phanh trước",
+      currentStep: 1,
+      requiredPartCode: "PT-MAPHANH-02",
+      requiredPartQty: 1,
+      laborFee: 400000,
+      quoteTotal: 1600000,
+      quoteApproved: false,
+      partsIssued: false,
+      kcsPassed: false,
+      paymentCompleted: false,
+      handoverCompleted: false
+    };
+    state.repairOrders.push(newRo);
+    state.selectedRoId = newId;
+    addLog(`[TIẾP NHẬN MỚI] Đã tạo lệnh sửa chữa ${newId} cho xe ${newRo.plate} ở Bước 1.`);
+    showAlert("success", `Đã tạo lệnh sửa chữa mới <b>${newId}</b> tại Bước 1.`);
+    saveState();
+  }
+
+  function selectRO(id) {
+    state.selectedRoId = id;
+    document.getElementById("alert-box").innerHTML = "";
+    saveState();
+  }
+
+  function exportBackup() {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+    const a = document.createElement("a");
+    a.setAttribute("href", dataStr);
+    a.setAttribute("download", `gara_ao_backup_${new Date().toISOString().slice(0,10)}.json`);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    addLog("[BACKUP] Đã xuất file JSON sao lưu dữ liệu thành công.");
+    saveState();
+  }
+
+  function resetMockData() {
+    localStorage.removeItem("GARA_AO_STATE_V1");
+    state = JSON.parse(JSON.stringify(INITIAL_STATE));
+    showAlert("success", "Đã khôi phục dữ liệu mẫu [MOCK] về trạng thái ban đầu.");
+    renderAll();
+  }
+
+  function renderAll() {
+    // Render KPI
+    const activeCount = state.repairOrders.filter(r => !r.handoverCompleted).length;
+    const doneCount = state.repairOrders.filter(r => r.handoverCompleted).length;
+    const revenue = state.repairOrders.filter(r => r.paymentCompleted).reduce((acc, r) => acc + r.quoteTotal, 0);
+    const totalStock = state.inventory.reduce((acc, p) => acc + p.stock, 0);
+
+    document.getElementById("kpi-active-ro").textContent = activeCount;
+    document.getElementById("kpi-done-ro").textContent = doneCount;
+    document.getElementById("kpi-revenue").textContent = revenue.toLocaleString("vi-VN") + " đ";
+    document.getElementById("kpi-stock").textContent = totalStock + " món";
+
+    // Render Select RO
+    const selectEl = document.getElementById("ro-select");
+    selectEl.innerHTML = state.repairOrders.map(r =>
+      `<option value="${r.id}" ${r.id === state.selectedRoId ? "selected" : ""}>
+        ${r.id} | ${r.plate} - ${r.carModel} (Bước ${r.currentStep}/9)
+      </option>`
+    ).join("");
+
+    const ro = getActiveRO();
+    if (ro) {
+      document.getElementById("ro-summary").innerHTML = `
+        <b>Khách hàng:</b> ${ro.customer} | <b>Biển số:</b> ${ro.plate} | <b>ODO:</b> ${ro.odo.toLocaleString('vi-VN')} km<br/>
+        <b>Yêu cầu:</b> ${ro.symptom} | <b>Phụ tùng cần:</b> ${ro.requiredPartCode} (SL: ${ro.requiredPartQty}) | <b>Tổng báo giá [MOCK]:</b> ${ro.quoteTotal.toLocaleString('vi-VN')} đ
+      `;
+
+      document.getElementById("gate-flags").innerHTML = `
+        <div class="gate-pill ${ro.quoteApproved ? 'gate-ok' : 'gate-no'}">1. Duyệt báo giá: ${ro.quoteApproved ? 'ĐÃ DUYỆT' : 'CHƯA DUYỆT'}</div>
+        <div class="gate-pill ${ro.partsIssued ? 'gate-ok' : 'gate-no'}">2. Xuất phụ tùng: ${ro.partsIssued ? 'ĐÃ XUẤT ĐỦ' : 'CHƯA XUẤT'}</div>
+        <div class="gate-pill ${ro.kcsPassed ? 'gate-ok' : 'gate-no'}">3. Kiểm tra KCS: ${ro.kcsPassed ? 'ĐẠT CHUẨN' : 'CHƯA ĐẠT'}</div>
+        <div class="gate-pill ${ro.paymentCompleted ? 'gate-ok' : 'gate-no'}">4. Thanh toán: ${ro.paymentCompleted ? 'ĐÃ THU ĐỦ' : 'CHƯA THU'}</div>
+      `;
+
+      document.getElementById("step-list").innerHTML = STEP_NAMES.map((name, idx) => {
+        const stepNum = idx + 1;
+        let cls = "step-item";
+        let statusTag = "Chờ xử lý";
+        if (stepNum < ro.currentStep || ro.handoverCompleted) {
+          cls += " done";
+          statusTag = "Hoàn thành";
+        } else if (stepNum === ro.currentStep) {
+          cls += " active";
+          statusTag = "Đang thực hiện";
+        }
+        return `<li class="${cls}"><span>${name}</span><span>[${statusTag}]</span></li>`;
+      }).join("");
+    }
+
+    // Render Inventory
+    document.getElementById("inventory-table").innerHTML = state.inventory.map(p => `
+      <tr>
+        <td><b>${p.code}</b></td>
+        <td>${p.name}</td>
+        <td><b>${p.stock}</b></td>
+        <td>${p.price.toLocaleString("vi-VN")} đ</td>
+        <td>
+          <button class="btn-outline" style="padding:4px 8px;" onclick="restockPart('${p.code}', 1)">+1</button>
+          <button class="btn-outline" style="padding:4px 8px;" onclick="restockPart('${p.code}', -1)">-1</button>
+        </td>
+      </tr>
+    `).join("");
+
+    // Render Car Sales
+    document.getElementById("sales-table").innerHTML = state.carSales.map(c => `
+      <tr>
+        <td>${c.vin}</td>
+        <td>${c.model}</td>
+        <td>${c.price.toLocaleString("vi-VN")} đ</td>
+        <td>${c.status}</td>
+      </tr>
+    `).join("");
+
+    // Render Logs
+    document.getElementById("audit-logs").innerHTML = state.logs.map(l =>
+      `<div class="log-entry">${l}</div>`
+    ).join("");
+  }
+
+  renderAll();
+</script>
+</body>
+</html>
